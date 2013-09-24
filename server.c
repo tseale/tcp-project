@@ -1,5 +1,11 @@
+/* 
+Taylor Seale & Justin Bartlett
+TCP Server - Project 1
+Computer Networks
+September 24, 2013
 
-/* Sample TCP server */
+TCP Server portion of Project 1
+*/
 
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -23,7 +29,7 @@ int main(int argc, char**argv)
 
    listen(listenfd,1024);
 
-   for(;;)
+   while(1)
    {
       clilen=sizeof(cliaddr);
       connfd = accept(listenfd,(struct sockaddr *)&cliaddr,&clilen);
@@ -32,7 +38,7 @@ int main(int argc, char**argv)
       {
          close (listenfd);
 
-         for(;;)
+         while(1)
          {
             n = recvfrom(connfd,mesg,1000,0,(struct sockaddr *)&cliaddr,&clilen);
             sendto(connfd,mesg,n,0,(struct sockaddr *)&cliaddr,sizeof(cliaddr));
