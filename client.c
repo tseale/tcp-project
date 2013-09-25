@@ -1,5 +1,14 @@
+/*
+Taylor Seale & Justin Bartlett
+Computer Networks - Project 1
 
-/* Sample TCP client */
+TCP Client
+
+client <host> <port> <filename>
+
+request a file from the server, download if it exists or exit if it does not
+check md5 checksum to ensure the file was transfered correctly
+*/
 
 #include <sys/socket.h>
 #include <netinet/in.h>
