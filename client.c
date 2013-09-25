@@ -27,7 +27,7 @@ check md5 checksum to ensure the file was transfered correctly
 #include <errno.h> //For errno - the error number
 #include <netdb.h> //hostent
 #include <arpa/inet.h>
-#include <stdint.h>
+#include <mhash.h>
 
 #define BUF_LEN 3200
 
@@ -79,18 +79,18 @@ int main(int argc, char**argv)
    if (n < 0) 
      error("ERROR reading from socket");
    file_size = ntohl(file_size);
-   printf("Response read from the server: %d\n", file_size);
+   //printf("Response read from the server: %d\n", file_size);
 
    if (file_size==0){
       printf("File does not exist on the server\n");
       exit(1);
    }
 
-   char md5[17];
+   char md5[16];
    n = read(sockfd, &md5, sizeof(md5));
    if (n < 0) 
      error("ERROR reading from socket");
-   printf("MD5 hash: %d\n", md5);
+   printf("MD5 hash: %s\n", md5);
 
    FILE* file;
    file = fopen(argv[3],"w");
