@@ -37,8 +37,6 @@ int main(int argc, char**argv)
 {
    // establish necessary variables here
    int sockfd,n; // socket and received buffer length
-   char input[BUF_LEN];
-   char output[BUF_LEN];
 
    if (argc != 4)
    {
@@ -74,15 +72,13 @@ int main(int argc, char**argv)
    /* send the message to the server */
    short int length = htons(strlen(argv[3]));
    n = write(sockfd, &length, sizeof(length));
-   bzero(input,BUF_LEN);
-   strcat(input,argv[3]);
-   n = write(sockfd, input, strlen(input));
+   n = write(sockfd, argv[3], strlen(argv[3]));
 
    int file_size;
    n = read(sockfd, &file_size, sizeof(file_size));
    if (n < 0) 
      error("ERROR reading from socket");
-  file_size = ntohl(file_size);
+   file_size = ntohl(file_size);
    printf("Response read from the server: %d\n", file_size);
 
    if (file_size==0){
@@ -95,6 +91,27 @@ int main(int argc, char**argv)
    if (n < 0) 
      error("ERROR reading from socket");
    printf("MD5 hash: %d\n", md5);
+
+   FILE* file;
+   file = fopen(argv[3],"w");
+   if (file==NULL)
+   {
+      printf("Could not open file\n");
+      exit(1);
+   }
+
+   char output[BUF_LEN];
+   bzero(output,BUF_LEN);
+   int downloaded=0;
+   while (downloaded<file_size)
+   {
+      n = read(sockfd,output,BUF_LEN);
+      fwrite(output,sizeof(char),BUF_LEN,file);
+      bzero(output,BUF_LEN);
+      downloaded+=BUF_LEN;
+   }
+
+   fclose(file);
 
 
    close(sockfd);
