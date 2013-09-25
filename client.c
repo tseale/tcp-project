@@ -27,6 +27,9 @@ check md5 checksum to ensure the file was transfered correctly
 #include <errno.h> //For errno - the error number
 #include <netdb.h> //hostent
 #include <arpa/inet.h>
+#include <stdint.h>
+
+#define BUF_LEN 3200
 
 char * hostname_to_ip(char *);
 
@@ -34,8 +37,8 @@ int main(int argc, char**argv)
 {
    // establish necessary variables here
    int sockfd,n; // socket and received buffer length
-   char input[3200];
-   char output[3200];
+   char input[BUF_LEN];
+   char output[BUF_LEN];
 
    if (argc != 4)
    {
@@ -48,19 +51,12 @@ int main(int argc, char**argv)
    {
       printf("Error creating socket\n");
       exit(1);
-   }else{
-      printf("Socket created successfully\n");
    }
 
    // to convert host name (returns original IP or hostname converted to IP)
    char *host = hostname_to_ip(argv[1]);
 
    printf("File being requested: %s\n",argv[3]);
-   short int length = strlen(argv[3]);
-   printf("Length of the file: %d\n",length);
-   sprintf(input,"%4x",length);
-   strcat(input,argv[3]);
-   printf("Information sent to server: %s\n",input);
 
    // set up all the network stuff
    struct sockaddr_in servaddr,cliaddr;
@@ -69,17 +65,40 @@ int main(int argc, char**argv)
    servaddr.sin_addr.s_addr=inet_addr(host);
    servaddr.sin_port=htons(atoi(argv[2]));
 
-   connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr));
-
-   while (fgets(input, 10000,stdin) != NULL)
+   if (connect(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr))==-1)
    {
-      printf("here");
-      sendto(sockfd,input,strlen(input),0,
-             (struct sockaddr *)&servaddr,sizeof(servaddr));
-      n=recvfrom(sockfd,output,10000,0,NULL,NULL);
-      output[n]=0;
-      fputs(output,stdout);
+      printf("Error creating a connection with the server\n");
+      exit(1);
    }
+
+   /* send the message to the server */
+   short int length = htons(strlen(argv[3]));
+   n = write(sockfd, &length, sizeof(length));
+   bzero(input,BUF_LEN);
+   strcat(input,argv[3]);
+   n = write(sockfd, input, strlen(input));
+
+   int file_size;
+   n = read(sockfd, &file_size, sizeof(file_size));
+   if (n < 0) 
+     error("ERROR reading from socket");
+  file_size = ntohl(file_size);
+   printf("Response read from the server: %d\n", file_size);
+
+   if (file_size==0){
+      printf("File does not exist on the server\n");
+      exit(1);
+   }
+
+   char md5[17];
+   n = read(sockfd, &md5, sizeof(md5));
+   if (n < 0) 
+     error("ERROR reading from socket");
+   printf("MD5 hash: %d\n", md5);
+
+
+   close(sockfd);
+   return 0;
 }
 
 // if a hostname is given, convert it to an IP address
