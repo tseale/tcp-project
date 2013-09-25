@@ -1,5 +1,5 @@
 /*
-Taylor Seale & Justin Bartlett
+Taylor Seale
 Computer Networks - Project 1
 
 TCP Client
@@ -29,7 +29,7 @@ check md5 checksum to ensure the file was transfered correctly
 #include <arpa/inet.h>
 #include "mhash.h"
 
-#define BUF_LEN 3200
+#define BUF_LEN 1400
 
 char *hostname_to_ip (char *);
 int compare_hash (char *, char *);
@@ -113,12 +113,19 @@ int main (int argc, char **argv)
   char output[BUF_LEN];
   bzero (output, BUF_LEN);
   int downloaded = 0;
+  int buffer_size;
   while (downloaded < file_size)
     {
-      n = read (sockfd, output, BUF_LEN);
-      fwrite (output, sizeof (char), BUF_LEN, file);
-      bzero (output, BUF_LEN);
-      downloaded += BUF_LEN;
+	  if ((file_size-downloaded)>BUF_LEN)
+	  {
+		  buffer_size=BUF_LEN;
+	  }else{
+		  buffer_size=(file_size-downloaded);
+	  }
+      n = read (sockfd, output, buffer_size);
+      fwrite (output, sizeof (char), buffer_size, file);
+      bzero (output, buffer_size);
+      downloaded += buffer_size;
     }
 
   rewind (file);
