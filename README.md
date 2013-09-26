@@ -1,4 +1,4 @@
 tcp-project
 ===========
 
-TCP project for Computer Networks w/ Justin Bartlett
+TCP project for Computer Networks
