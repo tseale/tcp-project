@@ -27,12 +27,14 @@ check md5 checksum to ensure the file was transfered correctly
 #include <errno.h>		//For errno - the error number
 #include <netdb.h>		//hostent
 #include <arpa/inet.h>
+#include <time.h>
 #include "mhash.h"
 
-#define BUF_LEN 1400
+#define BUF_LEN 3200
 
 char *hostname_to_ip (char *);
 int compare_hash (char *, char *);
+char *compute_hash (FILE *);
 
 int main (int argc, char **argv)
 {
@@ -54,8 +56,6 @@ int main (int argc, char **argv)
 
   // to convert host name (returns original IP or hostname converted to IP)
   char *host = hostname_to_ip (argv[1]);
-
-  printf ("File being requested: %s\n", argv[3]);
 
   // set up all the network stuff
   struct sockaddr_in servaddr, cliaddr;
@@ -95,12 +95,14 @@ int main (int argc, char **argv)
     error ("ERROR reading from socket");
 
   int i;
+	/*
   printf ("Server Hash: ");
   for (i = 0; i < mhash_get_block_size (MHASH_MD5); i++)
     {
       printf ("%.2x", server_hash[i]);
     }
   printf ("\n");
+	 */
 
   FILE *file;
   file = fopen (argv[3], "w+");
@@ -114,6 +116,9 @@ int main (int argc, char **argv)
   bzero (output, BUF_LEN);
   int downloaded = 0;
   int buffer_size;
+  struct timeval start;
+  struct timeval finish;
+  gettimeofday(&start,NULL);
   while (downloaded < file_size)
     {
 	  if ((file_size-downloaded)>BUF_LEN)
@@ -127,28 +132,34 @@ int main (int argc, char **argv)
       bzero (output, buffer_size);
       downloaded += buffer_size;
     }
+  gettimeofday(&finish,NULL);
+	long microsecs_elapsed = ((finish.tv_sec - start.tv_sec)*1000000L
+						  +finish.tv_usec) - start.tv_usec;
+	float time_elapsed = (float)microsecs_elapsed/1000000;
 
   rewind (file);
 
-  MHASH td;
-  unsigned char buffer;
-  unsigned char client_hash[16];
-
-  td = mhash_init (MHASH_MD5);
-
-  while (fread (&buffer, 1, 1, file) == 1)
+	MHASH td;
+	unsigned char buffer;
+	unsigned char client_hash[16];
+	
+	td = mhash_init (MHASH_MD5);
+	
+	while (fread (&buffer, 1, 1, file) == 1)
     {
-      mhash (td, &buffer, 1);
+		mhash (td, &buffer, 1);
     }
-  mhash_deinit (td, client_hash);
+	mhash_deinit (td, client_hash);
 
+	/*
   printf ("Client Hash: ");
   for (i = 0; i < mhash_get_block_size (MHASH_MD5); i++)
     {
       printf ("%.2x", client_hash[i]);
     }
   printf ("\n");
-
+	 */
+	 
   fclose (file);
 
   if (compare_hash (server_hash, client_hash) == 0)
@@ -157,21 +168,46 @@ int main (int argc, char **argv)
       remove (argv[3]);
       exit (1);
     }
+	
+  printf("%d bytes transferred in %.2f seconds: %.3f Megabytes/sec\n",file_size,time_elapsed,
+		 (float)(file_size/1000000)/time_elapsed);
+	printf("File MD5sum: ");
+	for (i = 0; i < mhash_get_block_size (MHASH_MD5); i++)
+    {
+		printf ("%.2x", client_hash[i]);
+    }
+	printf ("\n");
 
   close (sockfd);
   return 0;
+}
+
+char * compute_hash(FILE* file)
+{
+	MHASH td;
+	unsigned char buffer;
+	unsigned char hash[16];
+	
+	td = mhash_init (MHASH_MD5);
+	
+	while (fread (&buffer, 1, 1, file) == 1)
+    {
+		mhash (td, &buffer, 1);
+    }
+	mhash_deinit (td, hash);
+	return hash;
 }
 
 int compare_hash (char *server, char *client)
 {
   int i;
   for (i = 0; i < 16; i++)
-    {
+  {
       if (server[i] != client[i])
-	{
-	  return 0;
-	}
-    }
+	  {
+		  return 0;
+	  }
+  }
   return 1;
 }
 
