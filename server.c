@@ -61,6 +61,7 @@ int main(int argc, char**argv)
 		exit(1);
 	}
 	
+while(1){
 	// create client socket
 	clilen=sizeof(cliaddr);
 	if((connfd=accept(listenfd,(struct sockaddr *)&cliaddr,&clilen))<0)
@@ -80,8 +81,9 @@ int main(int argc, char**argv)
 	printf("Length of filename: %d\n",filename_length);
 	
 	// store the file name (using length to determine array size)
-	char* filename;
-	filename=(char*)malloc(filename_length*sizeof(char));
+	char filename[100];
+	bzero(filename,100);
+	//filename=(char*)malloc(filename_length*sizeof(char));
 	if ((n=read(connfd,filename,filename_length))==0)
 	{
 		printf("No data received...");
@@ -90,7 +92,8 @@ int main(int argc, char**argv)
 	printf("File Name: %s\n",filename);
 	
 	// set up file path (to afs directory)
-	char path[100];
+	char path[300];
+	bzero(path, 300);
 	strcat(path,"/afs/nd.edu/coursefa.13/cse/cse30264.01/files/Project1/");
 	strcat(path,filename);
 	printf("File path: %s\n",path);
@@ -99,6 +102,7 @@ int main(int argc, char**argv)
 	if(access(path,F_OK)!=0)
 	{
 		write(connfd,0,1); // send a 0 indicating that the file does not exist
+		printf("File does not exist...\n");
 		exit(1);
 	}
 	
@@ -151,6 +155,7 @@ int main(int argc, char**argv)
 	rewind(file);
 	
 	// transfer the file to the client
+	/*
 	bzero (buffer, BUFFER_SIZE);
 	int buffer_size;
 	int uploaded=0;
@@ -167,9 +172,22 @@ int main(int argc, char**argv)
 		bzero (buffer, buffer_size);
 		uploaded += buffer_size;
     }
+	*/
 	
+	bzero(buffer, BUFFER_SIZE);
+	while((n=fread(buffer, sizeof(char), BUFFER_SIZE, file)) > 0)
+	{
+		if(send(connfd, buffer, n, 0) < 0)
+		{
+			printf("Failure sending file...\n");
+			exit(1);
+		}
+		bzero(buffer, BUFFER_SIZE);
+	}
+	printf("\n\n");
 	fclose(file);
-	close(listenfd);
 	close(connfd);
+}
+	close(listenfd);
 	return 0;
 }
