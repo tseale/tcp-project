@@ -121,7 +121,7 @@ int main (int argc, char **argv)
   gettimeofday(&start,NULL);
   while (downloaded < file_size)
     {
-	  if ((file_size-downloaded)>BUF_LEN)
+	  if ((file_size-downloaded)>=BUF_LEN)
 	  {
 		  buffer_size=BUF_LEN;
 	  }else{
@@ -169,8 +169,8 @@ int main (int argc, char **argv)
       exit (1);
     }
 	
-  printf("%d bytes transferred in %.2f seconds: %.3f Megabytes/sec\n",file_size,time_elapsed,
-		 (float)(file_size/1000000)/time_elapsed);
+  printf("%d bytes transferred in %.6f seconds: %.6f MB/sec\n",file_size,time_elapsed,
+		 (float)(file_size/1048576)/time_elapsed);
 	printf("File MD5sum: ");
 	for (i = 0; i < mhash_get_block_size (MHASH_MD5); i++)
     {
